@@ -172,7 +172,7 @@ const Index = (props: indexProps) => {
                                ${typeHandler == "Support" ? "text-green-700" : ""}`}>Support</p>
                             <p onClick={() => filter("Marksman")}
                                className={`p-1 m-2 bg-gray-300 rounded cursor-pointer font-mono 
-                               ${typeHandler == "Marksman" ? "text-green-700" : ""}`}>Tireur</p>
+                               ${typeHandler == "Marksman" ? "text-green-700" : ""}`}>Tireur1</p>
                             <p onClick={() => filter("Tank")}
                                className={`p-1 m-2 bg-gray-300 rounded cursor-pointer font-mono 
                                ${typeHandler == "Tank" ? "text-green-700" : ""}`}>Tank</p>
