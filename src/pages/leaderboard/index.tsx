@@ -5,7 +5,10 @@ import {DataTable} from "@/components/constants/table/data-table";
 import {useRouter} from "next/router";
 
 
-const players : Player[] = [
+
+export const Index = () => {
+
+    const players : Player[] = [
         {
             id : 0,
             gamerTag:"Alson",
@@ -39,9 +42,6 @@ const players : Player[] = [
     ]
 
 
-
-const index =  () => {
-
     const router = useRouter()
 
     const filteredPlayer = players.sort( (a,b) => b.elo - a.elo)
@@ -63,4 +63,4 @@ const index =  () => {
     )
 }
 
-export default index
+export default Index
