@@ -27,7 +27,7 @@ const index = () => {
                     <AlertDialog>
                         <AlertDialogTrigger
                             className={"flex flex-col hover:shadow-xl m-4 items-center justify-center p-8"}>
-                            <Image src={require("../../../public/chibiLux.png")} alt={"chibi"} w={250} height={250}/>
+                            <Image src={require("../../../public/chibiLux.png")} alt={"chibi"} width={250} height={250}/>
                             <div className={"font-mono font-bold italic"}>Partie normale</div>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -45,7 +45,7 @@ const index = () => {
                     <AlertDialog>
                         <AlertDialogTrigger
                             className={"flex flex-col hover:shadow-xl m-4 items-center justify-center p-8"}>
-                            <Image src={require("../../../public/chibiLee.png")} alt={"chibi"} w={250} height={250}/>
+                            <Image src={require("../../../public/chibiLee.png")} alt={"chibi"} width={250} height={250}/>
                             <div className={"font-mono font-bold italic"}>Partie Classé</div>
                         </AlertDialogTrigger>
                         <AlertDialogContent>

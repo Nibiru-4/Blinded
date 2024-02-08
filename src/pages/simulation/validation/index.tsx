@@ -7,7 +7,7 @@ import {Button} from "@/components/ui/button";
 import Image from "next/image"
 
 
-import {DragDropContext, Draggable, Droppable} from "react-beautiful-dnd"
+import {DragDropContext, Draggable, Droppable, OnDragEndResponder} from "react-beautiful-dnd"
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -26,8 +26,8 @@ const Validation = (props: IValidation) => {
 
     const router = useRouter()
 
-    const bluePicks: Champion[] = JSON.parse(router.query.one)
-    const redPicks: Champion[] = JSON.parse(router.query.two)
+    const bluePicks: Champion[] = JSON.parse(router.query.one!.toString()) || []
+    const redPicks: Champion[] = JSON.parse(router.query.two!.toString()) || []
 
 
     type resultDroppable = {
@@ -35,7 +35,7 @@ const Validation = (props: IValidation) => {
         index: number
     }
 
-    const dragEndHandlerRed = (result) => {
+    const dragEndHandlerRed : OnDragEndResponder = (result ) => {
         const source : resultDroppable = result.source ?? {droppableId: "red", index: 0}
         const destination : resultDroppable = result.destination ?? {droppableId: "red", index: 0}
 
@@ -45,7 +45,7 @@ const Validation = (props: IValidation) => {
         redPicks[destination.index] = sourceChampion
     }
 
-    const dragEndHandlerBlue = (result) => {
+    const dragEndHandlerBlue :  OnDragEndResponder = (result) => {
         const source : resultDroppable = result.source ?? {droppableId: "blue", index: 0}
         const destination : resultDroppable = result.destination ?? {droppableId: "blue", index: 0}
 
@@ -69,19 +69,19 @@ const Validation = (props: IValidation) => {
                     <div className={" flex flex-col justify-center items-center"}>
                         <div className={"flex"}>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/toplane.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/toplane.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/jungle.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/jungle.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/mid.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/mid.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/adc.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/adc.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/support.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/support.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                         </div>
                         <div className={" flex m-8 h-1/2 w-1/2"}>
@@ -112,19 +112,19 @@ const Validation = (props: IValidation) => {
                     <div className={" flex flex-col justify-center items-center"}>
                         <div className={"flex"}>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/toplane.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/toplane.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/jungle.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/jungle.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/mid.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/mid.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/adc.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/adc.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                             <div className={"m-4"}>
-                                <Image src={require("../../../../public/roles/support.png")} alt={"chibi"} w={50} height={50}/>
+                                <Image src={require("../../../../public/roles/support.png")} alt={"chibi"} width={50} height={50}/>
                             </div>
                         </div>
                         <div className={" flex m-8 h-1/2 w-1/2"}>
