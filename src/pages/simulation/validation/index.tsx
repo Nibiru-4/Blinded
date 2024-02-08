@@ -26,8 +26,8 @@ const Validation = (props: IValidation) => {
 
     const router = useRouter()
 
-    const bluePicks: Champion[] = JSON.parse(router.query.one!.toString()) || []
-    const redPicks: Champion[] = JSON.parse(router.query.two!.toString()) || []
+    const bluePicks: Champion[] = router.query.one ?  JSON.parse(router.query.one.toString() || '{}') : []
+    const redPicks: Champion[] = router.query.two ?  JSON.parse(router.query.two.toString() || '{}') : []
 
 
     type resultDroppable = {
