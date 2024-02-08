@@ -19,7 +19,7 @@ export const Body = () => {
 
                 <div className={"flex flex-col items-center justify-center"}>
                     <p className={"font-mono font-bold p-10"}>Blinded</p>
-                    <Image src={require("../../../public/chibiLee.png")} alt={"chibi"} w={250} height={250}/>
+                    <Image src={require("../../../public/chibiLee.png")} alt={"chibi"} width={250} height={250}/>
                 </div>
             </div>
 
