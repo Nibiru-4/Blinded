@@ -1,265 +1,322 @@
-import React, {useState} from "react"
-import {Menu} from "@/components/constants/Menu";
-import {Input} from "@/components/ui/input";
-import {ChampionIcon} from "@/components/constants/champion-icon"
-import {Button} from "@/components/ui/button";
-import {useRouter} from "next/router";
+import React, { useMemo, useState } from "react"
+import { Menu } from "@/components/constants/Menu"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { ChampionIcon } from "@/components/constants/champion-icon"
+import {
+  getLatestVersion,
+  getChampions,
+  ROLE_LABELS,
+  type Champion,
+} from "@/lib/ddragon"
+import { useDraft, type SideSlots } from "@/hooks/use-draft"
+import { stepLabel } from "@/lib/draft"
 
-
-export type Champion = {
-    blurb: string
-    id: string
-    image: { full: string, sprite: string, group: string, h: number, w: number, x: number, y: number }
-    tags: string[]
-    isActif: boolean
+interface IndexProps {
+  version: string
+  champions: Champion[]
 }
 
-interface indexProps {
-    champions: Champion[]
+export const getServerSideProps = async () => {
+  const version = await getLatestVersion()
+  const champions = await getChampions(version)
+
+  return {
+    props: { version, champions },
+  }
 }
 
-export const getServerSideProps = async (context: any) => {
-
-    const response = await fetch(
-        `https://ddragon.leagueoflegends.com/cdn/13.19.1/data/en_US/champion.json`
-    );
-    const array = []
-    const data = await response.json()
-    const champions = await data.data
-    for (const champ in champions) {
-        array.push({
-            ...champions[champ],
-            isActif: true
-        })
-    }
-
-
-    return {
-        props: {
-            champions: array
-        }
-    }
+function SlotRow({
+  slots,
+  version,
+  size,
+  emptyLabel,
+}: {
+  slots: SideSlots
+  version: string
+  size: number
+  emptyLabel: string
+}) {
+  return (
+    <div className="flex gap-2">
+      {slots.map((championId, index) => (
+        <div
+          key={index}
+          className="flex items-center justify-center overflow-hidden rounded border border-lol-gold/25 bg-lol-void/60"
+          style={{ width: size, height: size }}
+        >
+          {championId ? (
+            <ChampionIcon id={championId} version={version} size={size} />
+          ) : (
+            <span className="text-xs text-lol-cream/20">{emptyLabel}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
 }
-const Index = (props: indexProps) => {
 
-    const router = useRouter()
+const Index = ({ version, champions }: IndexProps) => {
+  const draft = useDraft()
+  const [search, setSearch] = useState("")
+  const [role, setRole] = useState<string>("")
+  const [winner, setWinner] = useState<"blue" | "red" | null>(null)
 
-    const [typeHandler, setTypeHandler] = useState("")
-    const [champName, setChampName] = useState("")
+  const visibleChampions = useMemo(() => {
+    return champions.filter((champion) => {
+      if (draft.unavailable.has(champion.id)) return false
+      if (role && !champion.tags.includes(role)) return false
+      if (
+        search &&
+        !champion.name.toLowerCase().startsWith(search.toLowerCase())
+      )
+        return false
+      return true
+    })
+  }, [champions, draft.unavailable, role, search])
 
-    const [bluePicks, setBluePicks] = useState<Champion[]>([])
-    const [redPicks, setRedPicks] = useState<Champion[]>([])
+  function handleSimulate() {
+    setWinner(Math.random() < 0.5 ? "blue" : "red")
+  }
 
-    const filter = (type: string) => {
-        if (typeHandler == type) {
-            setTypeHandler("")
-            return
-        }
-        setTypeHandler(type)
-    }
+  function handleReset() {
+    draft.reset()
+    setWinner(null)
+    setSearch("")
+    setRole("")
+  }
 
-    const clickIconHandler = (champion: Champion) => {
+  return (
+    <>
+      <Menu />
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="hextech-heading text-2xl">Simulation de draft</h1>
+            <p className="text-sm text-lol-cream/50">Patch {version}</p>
+          </div>
+          {!winner && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="border-lol-gold/30 bg-transparent text-lol-cream hover:bg-lol-gold/10"
+                disabled={!draft.canUndo}
+                onClick={draft.undo}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="outline"
+                className="border-lol-gold/30 bg-transparent text-lol-cream hover:bg-lol-gold/10"
+                onClick={handleReset}
+              >
+                Recommencer
+              </Button>
+            </div>
+          )}
+        </div>
 
-        if (bluePicks.length === 5 && redPicks.length < 5) {
-            setRedPicks([
-                ...redPicks,
-                champion
-            ])
-            champion.isActif = false
-        }
-        if (bluePicks.length < 5) {
-            setBluePicks([
-                ...bluePicks,
-                champion
-            ])
-            champion.isActif = false
+        {winner ? (
+          <div className="hextech-panel flex flex-col items-center gap-6 p-10 text-center">
+            <p className="hextech-heading text-sm">Résultat de la simulation</p>
+            <h2
+              className={`text-4xl font-black ${
+                winner === "blue" ? "text-sky-400" : "text-lol-red"
+              }`}
+            >
+              {winner === "blue" ? "BLUE SIDE WINS" : "RED SIDE WINS"}
+            </h2>
 
-        }
-
-
-    }
-
-    const pressValidateHandler = () => {
-        router.push({
-            pathname : "/simulation/validation",
-            query : {
-                one : JSON.stringify(bluePicks),
-                two :  JSON.stringify(redPicks)
-            }
-        },"/simulation/validation")
-    }
-
-
-    return (
-        <div className={""}>
-            <Menu/>
-            <div className={""}>
-                <div className={"p-4 flex flex-col justify-center items-center"}>
-                    <p className={"font-bold font-mono m-4"}>Version 13.19.1</p>
-                    {bluePicks.length === 5 && redPicks.length === 5 ?
-                        <Button className={"font-mono"} disabled={false} onClick={pressValidateHandler}>Valider</Button> :
-                        <Button className={"font-mono"} disabled={true} onClick={pressValidateHandler}>Valider</Button>}
-
+            <div className="mt-4 grid w-full gap-8 sm:grid-cols-2">
+              <div>
+                <p className="mb-3 text-sm font-semibold text-sky-400">
+                  Blue Side
+                </p>
+                <div className="flex justify-center gap-2 sm:justify-start">
+                  <SlotRow
+                    slots={draft.picks.blue}
+                    version={version}
+                    size={56}
+                    emptyLabel=""
+                  />
                 </div>
-                <div className={" flex w-screen justify-between"}>
-                    <div className={" w-1/4 flex flex-col items-center"}>
-                        <p className={"font-mono font-bold m-4 text-blue-900"}>Blue Side</p>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            bluePicks.shift()
-                            setBluePicks([
-                                ...bluePicks
-                            ])
-                        }}>
-                            {bluePicks[0] ?
-                                <ChampionIcon id={bluePicks[0].id} isActif={true} tags={bluePicks[0].tags}/> : ""}
-                        </div>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            bluePicks.splice(1, 1)
-                            setBluePicks([
-                                ...bluePicks
-                            ])
-                        }}>
-                            {bluePicks[1] ?
-                                <ChampionIcon id={bluePicks[1].id} isActif={true} tags={bluePicks[1].tags}/> : ""}
-                        </div>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            bluePicks.splice(2, 1)
-                            setBluePicks([
-                                ...bluePicks
-                            ])
-                        }}>
-                            {bluePicks[2] ?
-                                <ChampionIcon id={bluePicks[2].id} isActif={true} tags={bluePicks[2].tags}/> : ""}
-                        </div>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            bluePicks.splice(3, 1)
-                            setBluePicks([
-                                ...bluePicks
-                            ])
-                        }}>
-                            {bluePicks[3] ?
-                                <ChampionIcon id={bluePicks[3].id} isActif={true} tags={bluePicks[3].tags}/> : ""}
-                        </div>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            bluePicks.pop()
-                            setBluePicks([
-                                ...bluePicks
-                            ])
-                        }}>
-                            {bluePicks[4] ?
-                                <ChampionIcon id={bluePicks[4].id} isActif={true} tags={bluePicks[4].tags}/> : ""}
-                        </div>
-                    </div>
-                    <div className={"w-1/2"}>
-                        <div className={"p-2"}>
-                            <Input className={"font-mono"} placeholder={"champion name"} value={champName} onChange={(e) => {
-                                setChampName(e.target.value)
-                                console.log(champName)
-                            }}/>
-                        </div>
-                        <div className={" flex items-center justify-center "}>
-                            <p onClick={() => filter("Fighter")}
-                               className={`p-1 m-2 bg-gray-300 rounded cursor-pointer font-mono 
-                               ${typeHandler == "Fighter" ? "text-green-700" : ""}`}>Combattant</p>
-                            <p onClick={() => filter("Assassin")}
-                               className={`p-1 m-2 bg-gray-300 rounded cursor-pointer font-mono 
-                               ${typeHandler == "Assassin" ? "text-green-700" : ""}`}>Assassin</p>
-                            <p onClick={() => filter("Mage")}
-                               className={`p-1 m-2 bg-gray-300 rounded cursor-pointer font-mono 
-                               ${typeHandler == "Mage" ? "text-green-700" : ""}`}>Mage</p>
-                            <p onClick={() => filter("Support")}
-                               className={`p-1 m-2 bg-gray-300 rounded cursor-pointer font-mono 
-                               ${typeHandler == "Support" ? "text-green-700" : ""}`}>Support</p>
-                            <p onClick={() => filter("Marksman")}
-                               className={`p-1 m-2 bg-gray-300 rounded cursor-pointer font-mono 
-                               ${typeHandler == "Marksman" ? "text-green-700" : ""}`}>Tireur</p>
-                            <p onClick={() => filter("Tank")}
-                               className={`p-1 m-2 bg-gray-300 rounded cursor-pointer font-mono 
-                               ${typeHandler == "Tank" ? "text-green-700" : ""}`}>Tank</p>
-                        </div>
-                        <div className={"grid grid-cols-6 h-screen overflow-auto grid-flow-row  "}>
-                            {props.champions.map((champion: Champion) => {
-                                if (typeHandler.length > 0 && champion.tags.includes(typeHandler)) {
-                                    if (champion.id.toUpperCase().startsWith(champName) || champion.id.toLowerCase().startsWith(champName)) {
-
-                                        if (champion.isActif) {
-                                            return (<div key={champion.id} onClick={() => clickIconHandler(champion)}>
-                                                <ChampionIcon id={champion.id} tags={champion.tags}
-                                                              isActif={champion.isActif}/>
-                                            </div>)
-                                        }
-                                    }
-                                }
-                                if (typeHandler == "" && (champion.id.toUpperCase().startsWith(champName)
-                                    || champion.id.toLowerCase().startsWith(champName))) {
-
-                                    if (champion.isActif) {
-                                        return (<div key={champion.id} onClick={() => clickIconHandler(champion)}>
-                                            <ChampionIcon id={champion.id} tags={champion.tags}
-                                                          isActif={champion.isActif}/>
-                                        </div>)
-                                    }
-
-                                }
-                            })}
-                        </div>
-
-
-                    </div>
-                    <div className={" w-1/4 flex flex-col items-center"}>
-                        <p className={"font-mono font-bold m-4 text-red-900"}>Red Side</p>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            redPicks.shift()
-                            setRedPicks([
-                                ...redPicks
-                            ])
-                        }}>
-                            {redPicks[0] ?
-                                <ChampionIcon id={redPicks[0].id} isActif={true} tags={redPicks[0].tags}/> : ""}
-                        </div>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            redPicks.splice(1, 1)
-                            setRedPicks([
-                                ...redPicks
-                            ])
-                        }}>
-                            {redPicks[1] ?
-                                <ChampionIcon id={redPicks[1].id} isActif={true} tags={redPicks[1].tags}/> : ""}
-                        </div>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            redPicks.splice(2, 1)
-                            setRedPicks([
-                                ...redPicks
-                            ])
-                        }}>
-                            {redPicks[2] ?
-                                <ChampionIcon id={redPicks[2].id} isActif={true} tags={redPicks[2].tags}/> : ""}
-                        </div>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            redPicks.splice(3, 1)
-                            setRedPicks([
-                                ...redPicks
-                            ])
-                        }}>
-                            {redPicks[3] ?
-                                <ChampionIcon id={redPicks[3].id} isActif={true} tags={redPicks[3].tags}/> : ""}
-                        </div>
-                        <div className={"bg-gray-300 h-24 w-24 m-4"} onClick={() => {
-                            redPicks.pop()
-                            setRedPicks([
-                                ...redPicks
-                            ])
-                        }}>
-                            {redPicks[4] ?
-                                <ChampionIcon id={redPicks[4].id} isActif={true} tags={redPicks[4].tags}/> : ""}
-                        </div>
-                    </div>
+              </div>
+              <div>
+                <p className="mb-3 text-sm font-semibold text-lol-red">
+                  Red Side
+                </p>
+                <div className="flex justify-center gap-2 sm:justify-start">
+                  <SlotRow
+                    slots={draft.picks.red}
+                    version={version}
+                    size={56}
+                    emptyLabel=""
+                  />
                 </div>
+              </div>
             </div>
 
+            <Button
+              size="lg"
+              className="mt-4 bg-lol-gold text-lol-void hover:bg-lol-goldlight"
+              onClick={handleReset}
+            >
+              Nouvelle draft
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="hextech-panel mb-6 flex flex-col items-center gap-2 p-4 text-center">
+              {draft.isComplete ? (
+                <>
+                  <p className="hextech-heading text-sm">Draft terminée</p>
+                  <Button
+                    size="lg"
+                    className="mt-2 bg-lol-gold text-lol-void hover:bg-lol-goldlight"
+                    onClick={handleSimulate}
+                  >
+                    Simuler la draft
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs uppercase tracking-widest text-lol-cream/40">
+                    Étape {draft.stepIndex + 1} / {draft.totalSteps}
+                  </p>
+                  <p
+                    className={`hextech-heading text-xl ${
+                      draft.currentStep?.side === "blue"
+                        ? "text-sky-400"
+                        : "text-lol-red"
+                    }`}
+                  >
+                    {draft.currentStep ? stepLabel(draft.currentStep) : ""}
+                  </p>
+                </>
+              )}
+            </div>
 
-        </div>
-    )
+            <div className="grid gap-6 lg:grid-cols-[220px_1fr_220px]">
+              <div className="flex flex-col items-center gap-4 lg:items-start">
+                <p className="hextech-heading text-sm text-sky-400">
+                  Blue Side
+                </p>
+                <div>
+                  <p className="mb-1 text-xs text-lol-cream/40">Bans</p>
+                  <SlotRow
+                    slots={draft.bans.blue}
+                    version={version}
+                    size={40}
+                    emptyLabel=""
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs text-lol-cream/40">Picks</p>
+                  <div className="flex flex-col gap-2">
+                    {draft.picks.blue.map((championId, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-center overflow-hidden rounded border border-lol-gold/25 bg-lol-void/60"
+                        style={{ width: 64, height: 64 }}
+                      >
+                        {championId && (
+                          <ChampionIcon
+                            id={championId}
+                            version={version}
+                            size={64}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-4 flex flex-col gap-3">
+                  <Input
+                    className="border-lol-gold/30 bg-lol-navy text-lol-cream"
+                    placeholder="Rechercher un champion..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {Object.entries(ROLE_LABELS).map(([tag, label]) => (
+                      <button
+                        key={tag}
+                        onClick={() => setRole(role === tag ? "" : tag)}
+                        className={`rounded border px-3 py-1 text-xs uppercase tracking-wide transition-colors ${
+                          role === tag
+                            ? "border-lol-goldlight bg-lol-gold/20 text-lol-goldlight"
+                            : "border-lol-gold/20 text-lol-cream/50 hover:text-lol-goldlight"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid max-h-[520px] grid-cols-5 gap-2 overflow-y-auto rounded border border-lol-gold/15 bg-lol-void/40 p-3 sm:grid-cols-7">
+                  {visibleChampions.map((champion) => (
+                    <ChampionIcon
+                      key={champion.id}
+                      id={champion.id}
+                      name={champion.name}
+                      version={version}
+                      size={56}
+                      onClick={() =>
+                        !draft.isComplete && draft.selectChampion(champion.id)
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-4 lg:items-end">
+                <p className="hextech-heading text-sm text-lol-red">
+                  Red Side
+                </p>
+                <div>
+                  <p className="mb-1 text-right text-xs text-lol-cream/40">
+                    Bans
+                  </p>
+                  <SlotRow
+                    slots={draft.bans.red}
+                    version={version}
+                    size={40}
+                    emptyLabel=""
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-right text-xs text-lol-cream/40">
+                    Picks
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {draft.picks.red.map((championId, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-center overflow-hidden rounded border border-lol-gold/25 bg-lol-void/60"
+                        style={{ width: 64, height: 64 }}
+                      >
+                        {championId && (
+                          <ChampionIcon
+                            id={championId}
+                            version={version}
+                            size={64}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  )
 }
 
 export default Index

@@ -50,6 +50,17 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        lol: {
+          void: "#010a13",
+          navy: "#0a1428",
+          navylight: "#0a323c",
+          steel: "#1e2328",
+          teal: "#0ac8b9",
+          gold: "#c89b3c",
+          goldlight: "#c8aa6e",
+          cream: "#f0e6d2",
+          red: "#e0433f",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -69,6 +80,10 @@ module.exports = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      fontFamily: {
+        sans: ["var(--font-body)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
       },
     },
   },
