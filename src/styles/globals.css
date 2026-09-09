@@ -54,7 +54,10 @@
 
 @layer components {
   .hextech-panel {
-    @apply relative rounded-md border border-lol-gold/40 bg-lol-navy/60 backdrop-blur-sm;
+    /* No backdrop-blur here: it creates a CSS containing block for
+       fixed-position descendants, which breaks @hello-pangea/dnd's
+       drag preview positioning (cursor/image offset while dragging). */
+    @apply relative rounded-md border border-lol-gold/40 bg-lol-navy/60;
   }
   .hextech-panel::before {
     content: "";
