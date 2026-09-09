@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from "react"
+import Image from "next/image"
+import { DragDropContext, Draggable, Droppable, type OnDragEndResponder } from "@hello-pangea/dnd"
 import { Menu } from "@/components/constants/Menu"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -10,7 +12,15 @@ import {
   type Champion,
 } from "@/lib/ddragon"
 import { useDraft, type SideSlots } from "@/hooks/use-draft"
-import { stepLabel } from "@/lib/draft"
+import { stepLabel, type Side } from "@/lib/draft"
+
+const ROLES = [
+  { icon: "toplane", label: "Top" },
+  { icon: "jungle", label: "Jungle" },
+  { icon: "mid", label: "Mid" },
+  { icon: "adc", label: "ADC" },
+  { icon: "support", label: "Support" },
+]
 
 interface IndexProps {
   version: string
@@ -56,6 +66,70 @@ function SlotRow({
   )
 }
 
+function RolesRow({
+  side,
+  picks,
+  version,
+  onDragEnd,
+}: {
+  side: Side
+  picks: SideSlots
+  version: string
+  onDragEnd: OnDragEndResponder
+}) {
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Droppable droppableId={`${side}-picks`} direction="horizontal">
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className="flex gap-3"
+          >
+            {picks.map((championId, index) => (
+              <Draggable
+                key={championId ?? index}
+                draggableId={championId ?? `empty-${index}`}
+                index={index}
+                isDragDisabled={!championId}
+              >
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <Image
+                      src={`/roles/${ROLES[index].icon}.png`}
+                      alt={ROLES[index].label}
+                      width={28}
+                      height={28}
+                    />
+                    <div className="overflow-hidden rounded border border-lol-gold/30 bg-lol-void/60">
+                      {championId && (
+                        <ChampionIcon
+                          id={championId}
+                          version={version}
+                          size={64}
+                        />
+                      )}
+                    </div>
+                    <span className="text-xs uppercase tracking-wide text-lol-cream/40">
+                      {ROLES[index].label}
+                    </span>
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
+  )
+}
+
 const Index = ({ version, champions }: IndexProps) => {
   const draft = useDraft()
   const [search, setSearch] = useState("")
@@ -84,6 +158,13 @@ const Index = ({ version, champions }: IndexProps) => {
     setWinner(null)
     setSearch("")
     setRole("")
+  }
+
+  function handleDragEnd(side: Side): OnDragEndResponder {
+    return (result) => {
+      if (!result.destination) return
+      draft.reorderPicks(side, result.source.index, result.destination.index)
+    }
   }
 
   return (
@@ -164,36 +245,65 @@ const Index = ({ version, champions }: IndexProps) => {
               Nouvelle draft
             </Button>
           </div>
+        ) : draft.isComplete ? (
+          <div className="hextech-panel flex flex-col items-center gap-8 p-8">
+            <div className="text-center">
+              <p className="hextech-heading text-sm">
+                Attribution des rôles
+              </p>
+              <p className="mt-1 text-sm text-lol-cream/50">
+                Glisse chaque champion vers son rôle avant de lancer la
+                simulation.
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-3 text-sm font-semibold text-sky-400">
+                Blue Side
+              </p>
+              <RolesRow
+                side="blue"
+                picks={draft.picks.blue}
+                version={version}
+                onDragEnd={handleDragEnd("blue")}
+              />
+            </div>
+
+            <div>
+              <p className="mb-3 text-sm font-semibold text-lol-red">
+                Red Side
+              </p>
+              <RolesRow
+                side="red"
+                picks={draft.picks.red}
+                version={version}
+                onDragEnd={handleDragEnd("red")}
+              />
+            </div>
+
+            <Button
+              size="lg"
+              className="bg-lol-gold text-lol-void hover:bg-lol-goldlight"
+              onClick={handleSimulate}
+            >
+              Simuler la draft
+            </Button>
+          </div>
         ) : (
           <>
             <div className="hextech-panel mb-6 flex flex-col items-center gap-2 p-4 text-center">
-              {draft.isComplete ? (
-                <>
-                  <p className="hextech-heading text-sm">Draft terminée</p>
-                  <Button
-                    size="lg"
-                    className="mt-2 bg-lol-gold text-lol-void hover:bg-lol-goldlight"
-                    onClick={handleSimulate}
-                  >
-                    Simuler la draft
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs uppercase tracking-widest text-lol-cream/40">
-                    Étape {draft.stepIndex + 1} / {draft.totalSteps}
-                  </p>
-                  <p
-                    className={`hextech-heading text-xl ${
-                      draft.currentStep?.side === "blue"
-                        ? "text-sky-400"
-                        : "text-lol-red"
-                    }`}
-                  >
-                    {draft.currentStep ? stepLabel(draft.currentStep) : ""}
-                  </p>
-                </>
-              )}
+              <p className="text-xs uppercase tracking-widest text-lol-cream/40">
+                Étape {draft.stepIndex + 1} / {draft.totalSteps}
+              </p>
+              <p
+                className={`hextech-heading text-xl ${
+                  draft.currentStep?.side === "blue"
+                    ? "text-sky-400"
+                    : "text-lol-red"
+                }`}
+              >
+                {draft.currentStep ? stepLabel(draft.currentStep) : ""}
+              </p>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[220px_1fr_220px]">

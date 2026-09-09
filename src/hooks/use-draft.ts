@@ -29,7 +29,11 @@ function initialState(): DraftState {
   }
 }
 
-type DraftAction = { type: "select"; championId: string } | { type: "undo" } | { type: "reset" }
+type DraftAction =
+  | { type: "select"; championId: string }
+  | { type: "undo" }
+  | { type: "reset" }
+  | { type: "reorder"; side: Side; sourceIndex: number; destIndex: number }
 
 function reducer(state: DraftState, action: DraftAction): DraftState {
   switch (action.type) {
@@ -71,6 +75,15 @@ function reducer(state: DraftState, action: DraftAction): DraftState {
         stepIndex: state.stepIndex - 1,
       }
     }
+    case "reorder": {
+      const slots: SideSlots = [...state.picks[action.side]] as SideSlots
+      const [moved] = slots.splice(action.sourceIndex, 1)
+      slots.splice(action.destIndex, 0, moved)
+      return {
+        ...state,
+        picks: { ...state.picks, [action.side]: slots },
+      }
+    }
     case "reset":
       return initialState()
   }
@@ -104,5 +117,7 @@ export function useDraft() {
     undo: () => dispatch({ type: "undo" }),
     canUndo: state.stepIndex > 0,
     reset: () => dispatch({ type: "reset" }),
+    reorderPicks: (side: Side, sourceIndex: number, destIndex: number) =>
+      dispatch({ type: "reorder", side, sourceIndex, destIndex }),
   }
 }
